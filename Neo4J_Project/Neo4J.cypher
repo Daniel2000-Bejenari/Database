@@ -1,0 +1,160 @@
+CREATE 
+(employee1:EMPLOYEE {name:"John Smith", salary:50000, tax:0.2, bonus:5000, currency:"USD"}),
+(employee2:EMPLOYEE {name:"Jane Doe", salary:60000, tax:0.25, bonus:6000, currency:"USD"}),
+(employee3:EMPLOYEE {name:"Bob Johnson", salary:65000, tax:0.22, bonus:6500, currency:"USD"}),
+(employee4:EMPLOYEE {name:"Emily Davis", salary:75000, tax:0.24, bonus:7500, currency:"USD"}),
+(employee5:EMPLOYEE {name:"Michael Brown", salary:80000, tax:0.23, bonus:8000, currency:"USD"}),
+(employee6:EMPLOYEE {name:"Sarah Miller", salary:90000, tax:0.26, bonus:9000, currency:"USD"}),
+(employee7:EMPLOYEE {name:"David Wilson", salary:100000, tax:0.28, bonus:10000, currency:"USD"}),
+
+(department1:DEPARTMENT {name: "IT"}),
+(department2:DEPARTMENT {name: "HR"}),
+(department3:DEPARTMENT {name: "Marketing"}),
+(department4:DEPARTMENT {name: "Finance"}),
+(department5:DEPARTMENT {name: "Sales"}),
+(department6:DEPARTMENT {name: "Operations"}),
+(department7:DEPARTMENT {name: "Executive"}),
+
+(employee1)-[:BELONG_TO]->(department1),
+(employee2)-[:BELONG_TO]->(department2),
+(employee3)-[:BELONG_TO]->(department3),
+(employee4)-[:BELONG_TO]->(department4),
+(employee5)-[:BELONG_TO]->(department5),
+(employee6)-[:BELONG_TO]->(department6),
+(employee7)-[:BELONG_TO]->(department7),
+
+(manager1:MANAGER {name: "Tom Johnson"}),
+(manager2:MANAGER {name: "Sara Lee"}),
+(manager3:MANAGER {name: "Bob Smith"}),
+(manager4:MANAGER {name: "Emily Davis"}),
+(manager5:MANAGER {name: "Michael Brown"}),
+(manager6:MANAGER {name: "Sarah Miller"}),
+(manager7:MANAGER {name: "David Wilson"}),
+
+(employee1)-[:MANAGED_BY]->(manager1),
+(employee2)-[:MANAGED_BY]->(manager2),
+(employee3)-[:MANAGED_BY]->(manager3),
+(employee4)-[:MANAGED_BY]->(manager4),
+(employee5)-[:MANAGED_BY]->(manager5),
+(employee6)-[:MANAGED_BY]->(manager6),
+(employee7)-[:MANAGED_BY]->(manager7),
+
+(ceo:CEO {name: "John Doe"}),
+
+(manager1)-[:MANAGED_BY]->(ceo),
+(manager2)-[:MANAGED_BY]->(ceo),
+(manager3)-[:MANAGED_BY]->(ceo),
+(manager4)-[:MANAGED_BY]->(ceo),
+(manager5)-[:MANAGED_BY]->(ceo),
+(manager6)-[:MANAGED_BY]->(ceo),
+(manager7)-[:MANAGED_BY]->(ceo),
+
+(company:COMPANY {name: "Acme Inc."}),
+
+(ceo)-[:WORKS_FOR]->(company)
+
+CREATE 
+(parking1:PARKING{id:1, location:"West Lot"}),
+(parking2:PARKING{id:2, location:"North Lot"}),
+(parking3:PARKING{id:3, location:"East Lot"}),
+(parking4:PARKING{id:4, location:"South Lot"})
+
+CREATE(employee1)-[:HAS_PARKING]->(parking1),
+(employee2)-[:HAS_PARKING]->(parking2),
+(employee3)-[:HAS_PARKING]->(parking3),
+(employee4)-[:HAS_PARKING]->(parking4)
+
+CREATE (project1:PROJECT{name:"Project A"}),
+(project2:PROJECT{name:"Project B"}),
+(project3:PROJECT{name:"Project C"})
+
+CREATE (employee1)-[:WORKS_ON]->(project1),
+(employee2)-[:WORKS_ON]->(project2),
+(employee3)-[:WORKS_ON]->(project3),
+(employee4)-[:WORKS_ON]->(project1),
+(employee5)-[:WORKS_ON]->(project2),
+(employee6)-[:WORKS_ON]->(project3),
+(employee7)-[:WORKS_ON]->(project1)
+
+CREATE (department1)-[:ASSIGNED_TO]->(project1),
+(department2)-[:ASSIGNED_TO]->(project2),
+(department3)-[:ASSIGNED_TO]->(project3),
+(department4)-[:ASSIGNED_TO]->(project1),
+(department5)-[:ASSIGNED_TO]->(project2),
+(department6)-[:ASSIGNED_TO]->(project3),
+(department7)-[:ASSIGNED_TO]->(project1)
+
+CREATE (stakeholder1:STAKEHOLDER{name:"Stakeholder A", role:"Sponsor"}),
+(stakeholder2:STAKEHOLDER{name:"Stakeholder B", role:"Investor"}),
+(stakeholder3:STAKEHOLDER{name:"Stakeholder C", role:"Partner"})
+
+CREATE (project1)-[:INVOLVES]->(stakeholder1),
+(project2)-[:INVOLVES]->(stakeholder2),
+(project3)-[:INVOLVES]->(stakeholder3)
+
+CREATE (department1)-[:REPORT_TO]->(stakeholder1),
+(department2)-[:REPORT_TO]->(stakeholder1),
+(department3)-[:REPORT_TO]->(stakeholder1),
+(department4)-[:REPORT_TO]->(stakeholder2),
+(department5)-[:REPORT_TO]->(stakeholder2),
+(department6)-[:REPORT_TO]->(stakeholder3),
+(department7)-[:REPORT_TO]->(stakeholder3)
+
+
+
+
+------------------ query -------------
+
+// Bejenari Daniel 1. Cel mai mare salariu si bonus pe care il are un angajat pe fiecare departament
+MATCH (e:EMPLOYEE)-[:BELONG_TO]->(d:DEPARTMENT)
+WITH d.name as department, e.salary as salary, e.bonus as bonus
+RETURN department, MAX(salary) as highest_salary, MAX(bonus) as highest_bonus
+ORDER BY department
+
+//Bejenari Daniel 2. Numarul total de angajati si media salariului pentru fiecare manager
+MATCH (e:EMPLOYEE)-[:MANAGED_BY]->(m:MANAGER)
+WITH m, collect(e) as employees, avg(e.salary) as avg_salary
+RETURN m.name as manager_name, size(employees) as total_employees, avg_salary
+
+//Bejenari Daniel 3.  Numele, salariu si o noua coloana salary_range (Low, Medium, High)
+MATCH (e:EMPLOYEE)
+RETURN e.name, e.salary,
+CASE
+  WHEN e.salary < 50000 THEN "Low"
+  WHEN e.salary >= 50000 AND e.salary < 75000 THEN "Medium"
+  WHEN e.salary >= 75000 THEN "High"
+END as salary_range
+
+//Bejenari Daniel 4. Combina rezultatele si returneaza numele unic al angajatului si salariu din departamentul de IT si Marketing
+
+MATCH (e:EMPLOYEE)-[:BELONG_TO]->(d:DEPARTMENT)
+WHERE d.name = "IT"
+RETURN e.name, e.salary
+UNION
+MATCH (e:EMPLOYEE)-[:BELONG_TO]->(d:DEPARTMENT)
+WHERE d.name = "Marketing"
+RETURN e.name, e.salary
+
+//Bejenari Daniel 5. Numele managerului si top 5 angajați cu salariul cel mai mare și departamentele la care acestea aparțin.
+
+MATCH (e:EMPLOYEE)-[:MANAGED_BY]->(m:MANAGER)
+WITH e, m
+ORDER BY e.salary DESC
+LIMIT 5
+MATCH (e)-[:BELONG_TO]->(d:DEPARTMENT)
+WITH e, m, d
+ORDER BY d.name
+RETURN m.name as manager_name, collect(e.name) as top_employees, collect(d.name) as departments
+
+
+//Bejenari Daniel 6. Coleacteaza numele angajatilor din departamentul IT  dupa manager. 
+
+MATCH (e:EMPLOYEE)-[:BELONG_TO]->(d:DEPARTMENT {name: "IT"})
+MATCH (e)-[:MANAGED_BY]->(m:MANAGER)
+RETURN m.name as manager_name, COLLECT(e.name) as employees
+
+
+//Bejenari Daniel 7.  left join pentru a obtine locurile de parcare pentru fiecare angajat 
+MATCH (e:EMPLOYEE)
+OPTIONAL MATCH (e)-[:HAS_PARKING]->(p:PARKING)
+RETURN e.name as employee_name, p.location as parking_location
